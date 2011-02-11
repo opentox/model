@@ -94,6 +94,7 @@ end
 # @return [text/uri-list] URI of prediction task (dataset prediction) or prediction dataset (compound prediction)
 post '/:id/?' do
 
+  puts params.to_yaml
 	@lazar = YAML.load ModelStore.get(params[:id]).yaml
   
 	halt 404, "Model #{params[:id]} does not exist." unless @lazar

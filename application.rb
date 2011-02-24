@@ -2,14 +2,16 @@ require 'rubygems'
 gem "opentox-ruby", "~> 0"
 require 'opentox-ruby'
 
+set :lock, true
+=begin
 class ModelStore
-	include DataMapper::Resource
-	attr_accessor :prediction_dataset, :subjectid
-	property :id, Serial
-	property :uri, String, :length => 255
-	property :yaml, Text, :length => 2**32-1 
-	property :created_at, DateTime
-	
+  include DataMapper::Resource
+  attr_accessor :prediction_dataset, :subjectid
+  property :id, Serial
+  property :uri, String, :length => 255
+  property :yaml, Text, :length => 2**32-1 
+  property :created_at, DateTime
+  
   @subjectid = nil
 
   after :save, :check_policy
@@ -18,45 +20,100 @@ class ModelStore
   def check_policy
     OpenTox::Authorization.check_policy(uri, subjectid)
   end
-	
+  
 end
+=end
 
 class PredictionCache
   # cache predictions
-	include DataMapper::Resource
-	property :id, Serial
-	property :compound_uri, String, :length => 255
-	property :model_uri, String, :length => 255
-	property :dataset_uri, String, :length => 255
+  include DataMapper::Resource
+  property :id, Serial
+  property :compound_uri, String, :length => 255
+  property :model_uri, String, :length => 255
+  property :dataset_uri, String, :length => 255
 end
 
 DataMapper.auto_upgrade!
 
-require 'lazar.rb'
-#require 'property_lazar.rb'
+before do
+  @accept = request.env['HTTP_ACCEPT']
+  @accept = 'application/rdf+xml' if @accept == '*/*' or @accept == '' or @accept.nil?
+  @id = request.path_info.match(/^\/\d+/)
+  unless @id.nil?
+    @id = @id.to_s.sub(/\//,'').to_i
 
+    @uri = uri @id
+    @yaml_file = "public/#{@id}.yaml"
+    halt 404, "Dataset #{@id} not found." unless File.exists? @yaml_file
+  end
+
+  # make sure subjectid is not included in params, subjectid is set as member variable
+  params.delete(:subjectid) 
+end
+
+require 'lazar.rb'
 
 helpers do
-	def activity(a)
-		case a.to_s
-		when "true"
-			act = "active"
-		when "false"
-			act = "inactive"
-		else
-			act = "not available"
-		end
-		act
-	end
+
+  def next_id
+    id = Dir["./public/*yaml"].collect{|f| File.basename(f.sub(/.yaml/,'')).to_i}.sort.last
+    id = 0 if id.nil?
+    id + 1
+  end
+
+  def uri(id)
+    url_for "/#{id}", :full
+  end
+
+  def uri_available?(urlStr)
+    url = URI.parse(urlStr)
+    unless @subjectid
+      Net::HTTP.start(url.host, url.port) do |http|
+        return http.head(url.request_uri).code == "200"
+      end
+    else
+      Net::HTTP.start(url.host, url.port) do |http|
+        return http.post(url.request_uri, "subjectid=#{@subjectid}").code == "202"
+      end
+    end
+  end
+
+  def activity(a)
+    case a.to_s
+    when "true"
+      act = "active"
+    when "false"
+      act = "inactive"
+    else
+      act = "not available"
+    end
+    act
+  end
 end
 
 get '/?' do # get index of models
-	response['Content-Type'] = 'text/uri-list'
-	params.delete_if{|k,v| k=="subjectid"}
-	ModelStore.all(params).collect{|m| m.uri}.join("\n") + "\n"
+  response['Content-Type'] = 'text/uri-list'
+  Dir["./public/*yaml"].collect{|f| File.basename(f.sub(/.yaml/,'')).to_i}.sort.collect{|n| uri n}.join("\n") + "\n"
 end
 
 delete '/:id/?' do
+  LOGGER.debug "Deleting model with id "+@id.to_s
+  begin
+    FileUtils.rm @yaml_file
+    if @subjectid and !File.exists? @yaml_file and @uri
+      begin
+        res = OpenTox::Authorization.delete_policies_from_uri(@uri, @subjectid)
+        LOGGER.debug "Policy deleted for Dataset URI: #{@uri} with result: #{res}"
+      rescue
+        LOGGER.warn "Policy delete error for Dataset URI: #{@uri}"
+      end
+    end
+    response['Content-Type'] = 'text/plain'
+    "Model #{@id} deleted."
+  rescue
+    halt 404, "Model #{@id} does not exist."
+  end
+=begin
   begin
     uri = ModelStore.get(params[:id]).uri
     ModelStore.get(params[:id]).destroy!
@@ -75,13 +132,14 @@ delete '/:id/?' do
   rescue
     halt 404, "Model #{params[:id]} does not exist."
   end
+=end
 end
 
 
 delete '/?' do
-	# TODO delete datasets
-  ModelStore.auto_migrate!
-  #Prediction.auto_migrate!
-	response['Content-Type'] = 'text/plain'
-	"All models and cached predictions deleted."
+  # TODO delete datasets
+  FileUtils.rm Dir["public/*.yaml"]
+  PredictionCache.auto_migrate!
+  response['Content-Type'] = 'text/plain'
+  "All models and cached predictions deleted."
 end

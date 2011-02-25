@@ -24,16 +24,19 @@ class ModelStore
 end
 =end
 
-class PredictionCache
+class PredictionCache < Ohm::Model
   # cache predictions
-  include DataMapper::Resource
-  property :id, Serial
-  property :compound_uri, String, :length => 255
-  property :model_uri, String, :length => 255
-  property :dataset_uri, String, :length => 255
+  #include DataMapper::Resource
+  #attribute :id, Serial
+  attribute :compound_uri
+  attribute :model_uri
+  attribute :dataset_uri
+
+  index :compound_uri
+  index :model_uri
 end
 
-DataMapper.auto_upgrade!
+#DataMapper.auto_upgrade!
 
 before do
   @accept = request.env['HTTP_ACCEPT']
@@ -139,7 +142,8 @@ end
 delete '/?' do
   # TODO delete datasets
   FileUtils.rm Dir["public/*.yaml"]
-  PredictionCache.auto_migrate!
+  PredictionCache.all.each {|cache| cache.delete }
+  #PredictionCache.auto_migrate!
   response['Content-Type'] = 'text/plain'
   "All models and cached predictions deleted."
 end

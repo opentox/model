@@ -85,7 +85,7 @@ post '/:id/?' do
   response['Content-Type'] = 'text/uri-list'
 
   if compound_uri
-    cache = PredictionCache.first(:model_uri => @lazar.uri, :compound_uri => compound_uri)
+    cache = PredictionCache.find(:model_uri => @lazar.uri, :compound_uri => compound_uri).first
     return cache.dataset_uri if cache and uri_available?(cache.dataset_uri)
     begin
       prediction_uri = @lazar.predict(compound_uri,true,@subjectid).uri

@@ -3,20 +3,6 @@ require "haml"
 # Get model representation
 # @return [application/rdf+xml,application/x-yaml] Model representation
 get '/:id/?' do
-
-=begin
-  accept = request.env['HTTP_ACCEPT']
-  accept = "application/rdf+xml" if accept == '*/*' or accept == '' or accept.nil?
-  # workaround for browser links
-  case params[:id]
-  when /.yaml$/
-    params[:id].sub!(/.yaml$/,'')
-    accept =  'application/x-yaml'
-  when /.rdf$/
-    params[:id].sub!(/.rdf$/,'')
-    accept =  'application/rdf+xml'
-  end
-=end
   halt 404, "Model #{params[:id]} not found." unless File.exists? @yaml_file
   response['Content-Type'] = @accept
   case @accept
@@ -37,9 +23,7 @@ get '/:id/?' do
 end
 
 get '/:id/metadata.?:ext?' do
-
   metadata = YAML.load_file(@yaml_file).metadata
-
   response['Content-Type'] = @accept
   case @accept
   when /yaml/
@@ -49,7 +33,6 @@ get '/:id/metadata.?:ext?' do
     serializer.add_metadata @uri, metadata
     serializer.to_rdfxml
   end
-
 end
 
 # Store a lazar model. This method should not be called directly, use OpenTox::Algorithm::Lazr to create a lazar model
@@ -57,9 +40,6 @@ end
 # @return [String] Model URI
 post '/?' do # create model
   halt 400, "MIME type \"#{request.content_type}\" not supported." unless request.content_type.match(/yaml/)
-  #model = ModelStore.create
-  #model.subjectid = @subjectid
-  #model.uri = url_for("/#{model.id}", :full)
   @id = next_id
   @uri = uri @id
   @yaml_file = "public/#{@id}.yaml"

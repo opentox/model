@@ -3,31 +3,8 @@ gem "opentox-ruby", "~> 0"
 require 'opentox-ruby'
 
 set :lock, true
-=begin
-class ModelStore
-  include DataMapper::Resource
-  attr_accessor :prediction_dataset, :subjectid
-  property :id, Serial
-  property :uri, String, :length => 255
-  property :yaml, Text, :length => 2**32-1 
-  property :created_at, DateTime
-  
-  @subjectid = nil
-
-  after :save, :check_policy
-  
-  private
-  def check_policy
-    OpenTox::Authorization.check_policy(uri, subjectid)
-  end
-  
-end
-=end
 
 class PredictionCache < Ohm::Model
-  # cache predictions
-  #include DataMapper::Resource
-  #attribute :id, Serial
   attribute :compound_uri
   attribute :model_uri
   attribute :dataset_uri
@@ -35,8 +12,6 @@ class PredictionCache < Ohm::Model
   index :compound_uri
   index :model_uri
 end
-
-#DataMapper.auto_upgrade!
 
 before do
   @accept = request.env['HTTP_ACCEPT']
@@ -116,26 +91,6 @@ delete '/:id/?' do
   rescue
     halt 404, "Model #{@id} does not exist."
   end
-=begin
-  begin
-    uri = ModelStore.get(params[:id]).uri
-    ModelStore.get(params[:id]).destroy!
-    "Model #{params[:id]} deleted."
-
-    if @subjectid and !ModelStore.get(params[:id]) and uri
-      begin
-        res = OpenTox::Authorization.delete_policies_from_uri(uri, @subjectid)
-        LOGGER.debug "Policy deleted for Model URI: #{uri} with subjectid: #{@subjectid} with result: #{res}"
-      rescue
-        LOGGER.warn "Policy delete error for Model URI: #{uri}"
-      end
-    end
-    response['Content-Type'] = 'text/plain'
-    "Model #{params[:id]} deleted."
-  rescue
-    halt 404, "Model #{params[:id]} does not exist."
-  end
-=end
 end
 
 
@@ -143,7 +98,6 @@ delete '/?' do
   # TODO delete datasets
   FileUtils.rm Dir["public/*.yaml"]
   PredictionCache.all.each {|cache| cache.delete }
-  #PredictionCache.auto_migrate!
   response['Content-Type'] = 'text/plain'
   "All models and cached predictions deleted."
 end

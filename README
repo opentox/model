@@ -5,7 +5,8 @@ OpenTox model
 * Implements the OpenTox model API 
 * Ruby implementation of lazar prediction models
 
-REST operations:
+REST operations
+---------------
 
 Get a list of all lazar models          GET     /     -               List of model URIs          200
 Get the representation of a lazar model GET     /{id} -               Model representation        200,404
@@ -13,12 +14,14 @@ Predict a compound                      POST    /{id} compound_uri    Prediction
 Predict a dataset                       POST    /{id} dataset_uri     Prediction dataset URI      200,404,500
 Delete a model                          DELETE  /{id} -               -                           200,404
 
-Supported MIME formats (http://chemical-mime.sourceforge.net/):
+Supported MIME formats (http://chemical-mime.sourceforge.net/)
+--------------------------------------------------------------
 
   * application/rdf+xml (default): read/write OWL-DL
   * application/x-yaml 
 
-Examples:
+Examples
+--------
 
 List all lazar models
   curl http://webservices.in-silico.ch/model
@@ -38,6 +41,10 @@ Predict a dataset
 Delete a model
   curl -X DELETE http://webservices.in-silico.ch/model/{id}
 
-More documentation: Source code (application.rb, lazar.rb)
+API documentation
+-----------------
 
-Copyright (c) 2009 Christoph Helma. See LICENSE for details.
+http://rdoc.info/github/opentox/model
+
+Copyright (c) 2009-2011 Christoph Helma, Martin Guetlein, Micha Rautenberg, Andreas Maunz, David Vorgrimmler, Denis Gebele. See LICENSE for details.
+

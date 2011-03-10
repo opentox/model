@@ -2,4 +2,4 @@ tmp/*
 *.sqlite3
 log/*
 db/*
-models/*
+public/*

@@ -1,64 +1,90 @@
 require 'rubygems'
-gem "opentox-ruby-api-wrapper", "= 1.6.5"
-require 'opentox-ruby-api-wrapper'
+gem "opentox-ruby", "~> 1"
+require 'opentox-ruby'
 
-class Model
-	include DataMapper::Resource
-	property :id, Serial
-	property :uri, String, :length => 255
-	property :owl, Text, :length => 2**32-1 
-	property :yaml, Text, :length => 2**32-1 
-	property :created_at, DateTime
+set :lock, true
+
+class PredictionCache < Ohm::Model
+  attribute :compound_uri
+  attribute :model_uri
+  attribute :dataset_uri
+
+  index :compound_uri
+  index :model_uri
 end
 
-class Prediction
-  # cache predictions
-	include DataMapper::Resource
-	property :id, Serial
-	property :compound_uri, String, :length => 255
-	property :model_uri, String, :length => 255
-	property :yaml, Text, :length => 2**32-1 
-end
+before do
+  @accept = request.env['HTTP_ACCEPT']
+  @accept = 'application/rdf+xml' if @accept == '*/*' or @accept == '' or @accept.nil?
+  @id = request.path_info.match(/^\/\d+/)
+  unless @id.nil?
+    @id = @id.to_s.sub(/\//,'').to_i
 
-DataMapper.auto_upgrade!
+    @uri = uri @id
+    @yaml_file = "public/#{@id}.yaml"
+    halt 404, "Dataset #{@id} not found." unless File.exists? @yaml_file
+  end
+
+  # make sure subjectid is not included in params, subjectid is set as member variable
+  params.delete(:subjectid) 
+end
 
 require 'lazar.rb'
-require 'property_lazar.rb'
-
 
 helpers do
-	def activity(a)
-		case a.to_s
-		when "true"
-			act = "active"
-		when "false"
-			act = "inactive"
-		else
-			act = "not available"
-		end
-		act
-	end
+
+  def next_id
+    id = Dir["./public/*yaml"].collect{|f| File.basename(f.sub(/.yaml/,'')).to_i}.sort.last
+    id = 0 if id.nil?
+    id + 1
+  end
+
+  def uri(id)
+    url_for "/#{id}", :full
+  end
+
+  def activity(a)
+    case a.to_s
+    when "true"
+      act = "active"
+    when "false"
+      act = "inactive"
+    else
+      act = "not available"
+    end
+    act
+  end
 end
 
 get '/?' do # get index of models
-	response['Content-Type'] = 'text/uri-list'
-	Model.all(params).collect{|m| m.uri}.join("\n") + "\n"
+  response['Content-Type'] = 'text/uri-list'
+  Dir["./public/*yaml"].collect{|f| File.basename(f.sub(/.yaml/,'')).to_i}.sort.collect{|n| uri n}.join("\n") + "\n"
 end
 
 delete '/:id/?' do
-	begin
-		Model.get(params[:id]).destroy!
-		"Model #{params[:id]} deleted."
-	rescue
-		halt 404, "Model #{params[:id]} does not exist."
-	end
+  LOGGER.debug "Deleting model with id "+@id.to_s
+  begin
+    FileUtils.rm @yaml_file
+    if @subjectid and !File.exists? @yaml_file and @uri
+      begin
+        res = OpenTox::Authorization.delete_policies_from_uri(@uri, @subjectid)
+        LOGGER.debug "Policy deleted for Dataset URI: #{@uri} with result: #{res}"
+      rescue
+        LOGGER.warn "Policy delete error for Dataset URI: #{@uri}"
+      end
+    end
+    response['Content-Type'] = 'text/plain'
+    "Model #{@id} deleted."
+  rescue
+    halt 404, "Model #{@id} does not exist."
+  end
 end
 
 
 delete '/?' do
-	# TODO delete datasets
-  Model.auto_migrate!
-  Prediction.auto_migrate!
-	response['Content-Type'] = 'text/plain'
-	"All models and cached predictions deleted."
+  # TODO delete datasets
+  FileUtils.rm Dir["public/*.yaml"]
+  PredictionCache.all.each {|cache| cache.delete }
+  response['Content-Type'] = 'text/plain'
+  "All models and cached predictions deleted."
 end

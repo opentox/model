@@ -46,6 +46,7 @@ post '/?' do # create model
   lazar = YAML.load request.env["rack.input"].read
   lazar.uri = @uri
   File.open(@yaml_file,"w+"){|f| f.puts lazar.to_yaml}
+  OpenTox::Authorization.check_policy(@uri, @subjectid) if File.exists? @yaml_file
   response['Content-Type'] = 'text/uri-list'
   @uri
 end

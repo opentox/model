@@ -22,7 +22,7 @@ before do
 
     @uri = uri @id
     @yaml_file = "public/#{@id}.yaml"
-    halt 404, "Dataset #{@id} not found." unless File.exists? @yaml_file
+    halt 404, "Model #{@id} not found." unless File.exists? @yaml_file
   end
 
   # make sure subjectid is not included in params, subjectid is set as member variable

@@ -16,13 +16,14 @@ end
 before do
   @accept = request.env['HTTP_ACCEPT']
   @accept = 'application/rdf+xml' if @accept == '*/*' or @accept == '' or @accept.nil?
+  response['Content-Type'] = @accept
   @id = request.path_info.match(/^\/\d+/)
   unless @id.nil?
     @id = @id.to_s.sub(/\//,'').to_i
 
     @uri = uri @id
     @yaml_file = "public/#{@id}.yaml"
-    halt 404, "Dataset #{@id} not found." unless File.exists? @yaml_file
+    halt 404, "Model #{@id} not found." unless File.exists? @yaml_file
   end
 
   # make sure subjectid is not included in params, subjectid is set as member variable

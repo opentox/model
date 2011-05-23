@@ -4,18 +4,14 @@ require "haml"
 # @return [application/rdf+xml,application/x-yaml] Model representation
 get '/:id/?' do
   halt 404, "Model #{params[:id]} not found." unless File.exists? @yaml_file
-  response['Content-Type'] = @accept
   case @accept
   when /application\/rdf\+xml/
     s = OpenTox::Serializer::Owl.new
     s.add_model(@uri,YAML.load_file(@yaml_file).metadata)
-    response['Content-Type'] = 'application/rdf+xml'
     s.to_rdfxml
   when /yaml/
-    response['Content-Type'] = 'application/x-yaml'
     File.read @yaml_file
   when /html/
-    response['Content-Type'] = 'text/html'
     OpenTox.text_to_html File.read(@yaml_file) 
   else
     halt 400, "Unsupported MIME type '#{@accept}'"
@@ -23,8 +19,8 @@ get '/:id/?' do
 end
 
 get '/:id/metadata.?:ext?' do
+  halt 404, "Model #{params[:id]} not found." unless File.exists? @yaml_file
   metadata = YAML.load_file(@yaml_file).metadata
-  response['Content-Type'] = @accept
   case @accept
   when /yaml/
     metadata.to_yaml
@@ -32,6 +28,44 @@ get '/:id/metadata.?:ext?' do
     serializer = OpenTox::Serializer::Owl.new
     serializer.add_metadata @uri, metadata
     serializer.to_rdfxml
+  end
+end
+
+get '/:id/dependent' do
+  halt 404, "Model #{params[:id]} not found." unless File.exists? @yaml_file
+  feature_uri = YAML.load_file(@yaml_file).metadata[OT.dependentVariables]
+  case @accept
+  when /yaml/
+    OpenTox::Feature.find(feature_uri).to_yaml
+  when "text/uri-list"
+    feature_uri
+  when /rdf/ 
+    OpenTox::Feature.find(feature_uri).to_rdfxml
+  when /html/
+    OpenTox.text_to_html OpenTox::Feature.find(feature_uri).to_yaml
+  else
+    halt 400, "Unsupported MIME type '#{@accept}'"
+  end
+end
+
+get '/:id/predicted' do
+  halt 404, "Model #{params[:id]} not found." unless File.exists? @yaml_file
+  return  feature_uri if @accept == "text/uri-list"
+  predicted = OpenTox::Feature.new(File.join @uri,"predicted")
+  dependent = OpenTox::Feature.find(YAML.load_file(@yaml_file).metadata[OT.dependentVariables])
+  predicted.metadata[RDF.type] = dependent.metadata[RDF.type]
+  #predicted.metadata[OT.hasSource] = @uri
+  #predicted.metadata[DC.creator] = @uri
+  predicted.metadata[DC.title] = dependent.metadata[DC.title]
+  case @accept
+  when /yaml/
+    predicted.to_yaml
+  when /rdf/ 
+    predicted.to_rdfxml
+  when /html/
+    OpenTox.text_to_html predicted.to_yaml
+  else
+    halt 400, "Unsupported MIME type '#{@accept}'"
   end
 end
 
@@ -68,13 +102,17 @@ post '/:id/?' do
   if compound_uri
     cache = PredictionCache.find(:model_uri => @lazar.uri, :compound_uri => compound_uri).first
     return cache.dataset_uri if cache and uri_available?(cache.dataset_uri)
-    begin
-      prediction_uri = @lazar.predict(compound_uri,true,@subjectid).uri
-      PredictionCache.create(:model_uri => @lazar.uri, :compound_uri => compound_uri, :dataset_uri => prediction_uri)
-      prediction_uri
-    rescue
-      LOGGER.error "Lazar prediction failed for #{compound_uri} with #{$!} "
-      halt 500, "Prediction of #{compound_uri} with #{@lazar.uri} failed."
+    if cache and uri_available?(cache.dataset_uri)
+      return cache.dataset_uri 
+    else
+      begin
+        prediction_uri = @lazar.predict(compound_uri,true,@subjectid).uri
+        PredictionCache.create(:model_uri => @lazar.uri, :compound_uri => compound_uri, :dataset_uri => prediction_uri)
+        prediction_uri
+      rescue
+        LOGGER.error "Lazar prediction failed for #{compound_uri} with #{$!} "
+        halt 500, "Prediction of #{compound_uri} with #{@lazar.uri} failed."
+      end
     end
   elsif dataset_uri
     task = OpenTox::Task.create("Predict dataset",url_for("/#{@lazar.id}", :full)) do |task|

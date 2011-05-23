@@ -7,7 +7,8 @@ get '/:id/?' do
   case @accept
   when /application\/rdf\+xml/
     s = OpenTox::Serializer::Owl.new
-    s.add_model(@uri,YAML.load_file(@yaml_file).metadata)
+    metadata = YAML.load_file(@yaml_file).metadata
+    s.add_model(@uri,metadata)
     s.to_rdfxml
   when /yaml/
     File.read @yaml_file
@@ -20,6 +21,7 @@ end
 
 get '/:id/metadata.?:ext?' do
   halt 404, "Model #{params[:id]} not found." unless File.exists? @yaml_file
+  @accept = "application/x-yaml" if params[:ext] and params[:ext].match?(/yaml/)
   metadata = YAML.load_file(@yaml_file).metadata
   case @accept
   when /yaml/
@@ -31,8 +33,9 @@ get '/:id/metadata.?:ext?' do
   end
 end
 
-get '/:id/dependent' do
+get '/:id/dependent.?:ext?' do
   halt 404, "Model #{params[:id]} not found." unless File.exists? @yaml_file
+  @accept = "application/x-yaml" if params[:ext].match?(/yaml/)
   feature_uri = YAML.load_file(@yaml_file).metadata[OT.dependentVariables]
   case @accept
   when /yaml/
@@ -48,8 +51,9 @@ get '/:id/dependent' do
   end
 end
 
-get '/:id/predicted' do
+get '/:id/predicted.?:ext?' do
   halt 404, "Model #{params[:id]} not found." unless File.exists? @yaml_file
+  @accept = "application/x-yaml" if params[:ext].match?(/yaml/)
   return  feature_uri if @accept == "text/uri-list"
   predicted = OpenTox::Feature.new(File.join @uri,"predicted")
   dependent = OpenTox::Feature.find(YAML.load_file(@yaml_file).metadata[OT.dependentVariables])

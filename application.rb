@@ -16,6 +16,7 @@ end
 before do
   @accept = request.env['HTTP_ACCEPT']
   @accept = 'application/rdf+xml' if @accept == '*/*' or @accept == '' or @accept.nil?
+  response['Content-Type'] = @accept
   @id = request.path_info.match(/^\/\d+/)
   unless @id.nil?
     @id = @id.to_s.sub(/\//,'').to_i

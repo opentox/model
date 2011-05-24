@@ -6,13 +6,16 @@ get '/:id/?' do
   halt 404, "Model #{params[:id]} not found." unless File.exists? @yaml_file
   case @accept
   when /application\/rdf\+xml/
+    response['Content-Type'] = 'application/rdf+xml'
     s = OpenTox::Serializer::Owl.new
     metadata = YAML.load_file(@yaml_file).metadata
     s.add_model(@uri,metadata)
     s.to_rdfxml
   when /yaml/
+    response['Content-Type'] = 'application/x-yaml'
     File.read @yaml_file
   when /html/
+    response['Content-Type'] = 'text/html'
     OpenTox.text_to_html File.read(@yaml_file) 
   else
     halt 400, "Unsupported MIME type '#{@accept}'"

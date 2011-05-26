@@ -24,7 +24,7 @@ end
 
 get '/:id/metadata.?:ext?' do
   halt 404, "Model #{params[:id]} not found." unless File.exists? @yaml_file
-  @accept = "application/x-yaml" if params[:ext] and params[:ext].match?(/yaml/)
+  @accept = "application/x-yaml" if params[:ext] and params[:ext].match(/yaml/)
   metadata = YAML.load_file(@yaml_file).metadata
   case @accept
   when /yaml/
@@ -38,7 +38,7 @@ end
 
 get '/:id/dependent.?:ext?' do
   halt 404, "Model #{params[:id]} not found." unless File.exists? @yaml_file
-  @accept = "application/x-yaml" if params[:ext].match?(/yaml/)
+  @accept = "application/x-yaml" if params[:ext] and params[:ext].match(/yaml/)
   feature_uri = YAML.load_file(@yaml_file).metadata[OT.dependentVariables]
   case @accept
   when /yaml/
@@ -54,23 +54,41 @@ get '/:id/dependent.?:ext?' do
   end
 end
 
+get '/:id/predicted/:prop' do
+  halt 404, "Model #{params[:id]} not found." unless File.exists? @yaml_file
+  if params[:prop] == "value" or params[:prop] == "confidence"
+    feature = eval "YAML.load_file(@yaml_file).prediction_#{params[:prop]}_feature"
+    case @accept
+    when /yaml/
+      feature.to_yaml
+    when /rdf/ 
+      feature.to_rdfxml
+    when /html/
+      OpenTox.text_to_html feature.to_yaml
+    else
+      halt 400, "Unsupported MIME type '#{@accept}'"
+    end
+  else
+      halt 400, "Unknown URI #{@uri}"
+  end
+end
+
 get '/:id/predicted.?:ext?' do
   halt 404, "Model #{params[:id]} not found." unless File.exists? @yaml_file
-  @accept = "application/x-yaml" if params[:ext].match?(/yaml/)
-  return  feature_uri if @accept == "text/uri-list"
-  predicted = OpenTox::Feature.new(File.join @uri,"predicted")
-  dependent = OpenTox::Feature.find(YAML.load_file(@yaml_file).metadata[OT.dependentVariables])
-  predicted.metadata[RDF.type] = dependent.metadata[RDF.type]
-  #predicted.metadata[OT.hasSource] = @uri
-  #predicted.metadata[DC.creator] = @uri
-  predicted.metadata[DC.title] = dependent.metadata[DC.title]
+  @accept = "application/x-yaml" if params[:ext] and params[:ext].match(/yaml/)
+  features = YAML.load_file(@yaml_file).prediction_features
   case @accept
+  when  "text/uri-list"
+    "#{features.collect{|f| f.uri}.join("\n")}\n"
   when /yaml/
-    predicted.to_yaml
+    features.to_yaml
   when /rdf/ 
-    predicted.to_rdfxml
+    serializer = OpenTox::Serializer::Owl.new
+    features.each{|f| serializer.add_feature(f.uri,f.metadata)}
+    serializer.to_rdfxml
+    #feature.to_rdfxml
   when /html/
-    OpenTox.text_to_html predicted.to_yaml
+    OpenTox.text_to_html features.to_yaml
   else
     halt 400, "Unsupported MIME type '#{@accept}'"
   end
@@ -86,6 +104,9 @@ post '/?' do # create model
   @yaml_file = "public/#{@id}.yaml"
   lazar = YAML.load request.env["rack.input"].read
   lazar.uri = @uri
+  value_feature_uri = File.join( @uri, "predicted", "value")
+  confidence_feature_uri = File.join( @uri, "predicted", "confidence")
+  lazar.metadata[OT.predictedVariables] = [value_feature_uri, confidence_feature_uri]
   File.open(@yaml_file,"w+"){|f| f.puts lazar.to_yaml}
   OpenTox::Authorization.check_policy(@uri, @subjectid) if File.exists? @yaml_file
   response['Content-Type'] = 'text/uri-list'

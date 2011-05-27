@@ -60,11 +60,14 @@ get '/:id/predicted/:prop' do
     feature = eval "YAML.load_file(@yaml_file).prediction_#{params[:prop]}_feature"
     case @accept
     when /yaml/
-      feature.to_yaml
-    when /rdf/ 
+      content_type "application/x-yaml"
+      feature.metadata.to_yaml
+    when /rdf/
+      content_type "application/rdf+xml"
       feature.to_rdfxml
     when /html/
-      OpenTox.text_to_html feature.to_yaml
+      content_type "text/html"
+      OpenTox.text_to_html feature.metadata.to_yaml
     else
       halt 400, "Unsupported MIME type '#{@accept}'"
     end

@@ -132,7 +132,6 @@ post '/:id/?' do
 
   if compound_uri
     cache = PredictionCache.find(:model_uri => @lazar.uri, :compound_uri => compound_uri).first
-    return cache.dataset_uri if cache and uri_available?(cache.dataset_uri)
     if cache and uri_available?(cache.dataset_uri)
       return cache.dataset_uri 
     else

@@ -23,7 +23,7 @@ before do
 
     @uri = uri @id
     @yaml_file = "public/#{@id}.yaml"
-    halt 404, "Model #{@id} not found." unless File.exists? @yaml_file
+    raise OpenTox::NotFoundError.new "Model #{@id} not found." unless File.exists? @yaml_file
   end
 
   # make sure subjectid is not included in params, subjectid is set as member variable
@@ -77,7 +77,7 @@ delete '/:id/?' do
     response['Content-Type'] = 'text/plain'
     "Model #{@id} deleted."
   rescue
-    halt 404, "Model #{@id} does not exist."
+    raise OpenTox::NotFoundError.new "Model #{@id} does not exist."
   end
 end
 

@@ -69,9 +69,9 @@ delete '/:id/?' do
     if @subjectid and !File.exists? @yaml_file and @uri
       begin
         res = OpenTox::Authorization.delete_policies_from_uri(@uri, @subjectid)
-        LOGGER.debug "Policy deleted for Dataset URI: #{@uri} with result: #{res}"
+        LOGGER.debug "Policy deleted for Model URI: #{@uri} with result: #{res}"
       rescue
-        LOGGER.warn "Policy delete error for Dataset URI: #{@uri}"
+        LOGGER.warn "Policy delete error for Model URI: #{@uri}"
       end
     end
     response['Content-Type'] = 'text/plain'

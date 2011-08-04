@@ -23,7 +23,7 @@ before do
 
     @uri = uri @id
     @yaml_file = "public/#{@id}.yaml"
-    halt 404, "Dataset #{@id} not found." unless File.exists? @yaml_file
+    raise OpenTox::NotFoundError.new "Model #{@id} not found." unless File.exists? @yaml_file
   end
 
   # make sure subjectid is not included in params, subjectid is set as member variable
@@ -69,15 +69,15 @@ delete '/:id/?' do
     if @subjectid and !File.exists? @yaml_file and @uri
       begin
         res = OpenTox::Authorization.delete_policies_from_uri(@uri, @subjectid)
-        LOGGER.debug "Policy deleted for Dataset URI: #{@uri} with result: #{res}"
+        LOGGER.debug "Policy deleted for Model URI: #{@uri} with result: #{res}"
       rescue
-        LOGGER.warn "Policy delete error for Dataset URI: #{@uri}"
+        LOGGER.warn "Policy delete error for Model URI: #{@uri}"
       end
     end
     response['Content-Type'] = 'text/plain'
     "Model #{@id} deleted."
   rescue
-    halt 404, "Model #{@id} does not exist."
+    raise OpenTox::NotFoundError.new "Model #{@id} does not exist."
   end
 end
 

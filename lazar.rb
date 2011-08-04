@@ -42,13 +42,13 @@ get '/:id/dependent.?:ext?' do
   feature_uri = YAML.load_file(@yaml_file).metadata[OT.dependentVariables]
   case @accept
   when /yaml/
-    OpenTox::Feature.find(feature_uri).to_yaml
+    OpenTox::Feature.find(feature_uri, @subjectid).to_yaml
   when "text/uri-list"
     feature_uri
   when /rdf/ 
-    OpenTox::Feature.find(feature_uri).to_rdfxml
+    OpenTox::Feature.find(feature_uri, @subjectid).to_rdfxml
   when /html/
-    OpenTox.text_to_html OpenTox::Feature.find(feature_uri).to_yaml
+    OpenTox.text_to_html OpenTox::Feature.find(feature_uri, @subjectid).to_yaml
   else
     raise OpenTox::BadRequestError.new "Unsupported MIME type '#{@accept}'"
   end

@@ -4,6 +4,8 @@ require 'opentox-ruby'
 
 set :lock, true
 
+@@datadir = "data"
+
 class PredictionCache < Ohm::Model
   attribute :compound_uri
   attribute :model_uri
@@ -22,7 +24,7 @@ before do
     @id = @id.to_s.sub(/\//,'').to_i
 
     @uri = uri @id
-    @yaml_file = "public/#{@id}.yaml"
+    @yaml_file = "#{@@datadir}/#{@id}.yaml"
     raise OpenTox::NotFoundError.new "Model #{@id} not found." unless File.exists? @yaml_file
   end
 
@@ -35,7 +37,7 @@ require 'lazar.rb'
 helpers do
 
   def next_id
-    id = Dir["./public/*yaml"].collect{|f| File.basename(f.sub(/.yaml/,'')).to_i}.sort.last
+    id = Dir["./#{@@datadir}/*yaml"].collect{|f| File.basename(f.sub(/.yaml/,'')).to_i}.sort.last
     id = 0 if id.nil?
     id + 1
   end
@@ -59,7 +61,7 @@ end
 
 get '/?' do # get index of models
   response['Content-Type'] = 'text/uri-list'
-  Dir["./public/*yaml"].collect{|f| File.basename(f.sub(/.yaml/,'')).to_i}.sort.collect{|n| uri n}.join("\n") + "\n"
+  Dir["./#{@@datadir}/*yaml"].collect{|f| File.basename(f.sub(/.yaml/,'')).to_i}.sort.collect{|n| uri n}.join("\n") + "\n"
 end
 
 delete '/:id/?' do
@@ -84,7 +86,7 @@ end
 
 delete '/?' do
   # TODO delete datasets
-  FileUtils.rm Dir["public/*.yaml"]
+  FileUtils.rm Dir["#{@@datadir}/*.yaml"]
   PredictionCache.all.each {|cache| cache.delete }
   response['Content-Type'] = 'text/plain'
   "All models and cached predictions deleted."

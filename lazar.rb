@@ -104,7 +104,7 @@ post '/?' do # create model
   raise OpenTox::BadRequestError.new "MIME type \"#{request.content_type}\" not supported." unless request.content_type.match(/yaml/)
   @id = next_id
   @uri = uri @id
-  @yaml_file = "public/#{@id}.yaml"
+  @yaml_file = "#{@@datadir}/#{@id}.yaml"
   lazar = YAML.load request.env["rack.input"].read
   lazar.uri = @uri
   value_feature_uri = File.join( @uri, "predicted", "value")

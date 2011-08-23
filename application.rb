@@ -26,6 +26,20 @@ before do
     @uri = uri @id
     @yaml_file = "#{@@datadir}/#{@id}.yaml"
     raise OpenTox::NotFoundError.new "Model #{@id} not found." unless File.exists? @yaml_file
+
+    extension = File.extname(request.path_info)
+    unless extension.empty?
+      case extension
+      when ".html"
+        @accept = 'text/html'
+      when ".yaml"
+        @accept = 'application/x-yaml'
+      when ".rdfxml"
+        @accept = 'application/rdf+xml'
+      else
+        raise OpenTox::NotFoundError.new "File format #{extension} not supported."
+      end
+    end
   end
 
   # make sure subjectid is not included in params, subjectid is set as member variable

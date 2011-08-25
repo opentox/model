@@ -24,8 +24,8 @@ before do
     @id = @id.to_s.sub(/\//,'').to_i
 
     @uri = uri @id
-    @yaml_file = "#{@@datadir}/#{@id}.yaml"
-    raise OpenTox::NotFoundError.new "Model #{@id} not found." unless File.exists? @yaml_file
+    @json_file = "#{@@datadir}/#{@id}.json"
+    raise OpenTox::NotFoundError.new "Model #{@id} not found." unless File.exists? @json_file
 
     extension = File.extname(request.path_info)
     unless extension.empty?
@@ -34,6 +34,8 @@ before do
         @accept = 'text/html'
       when ".yaml"
         @accept = 'application/x-yaml'
+      when ".json"
+        @accept = 'application/json'
       when ".rdfxml"
         @accept = 'application/rdf+xml'
       else
@@ -51,7 +53,7 @@ require 'lazar.rb'
 helpers do
 
   def next_id
-    id = Dir["./#{@@datadir}/*yaml"].collect{|f| File.basename(f.sub(/.yaml/,'')).to_i}.sort.last
+    id = Dir["./#{@@datadir}/*json"].collect{|f| File.basename(f.sub(/.json/,'')).to_i}.sort.last
     id = 0 if id.nil?
     id + 1
   end
@@ -75,14 +77,14 @@ end
 
 get '/?' do # get index of models
   response['Content-Type'] = 'text/uri-list'
-  Dir["./#{@@datadir}/*yaml"].collect{|f| File.basename(f.sub(/.yaml/,'')).to_i}.sort.collect{|n| uri n}.join("\n") + "\n"
+  Dir["./#{@@datadir}/*json"].collect{|f| File.basename(f.sub(/.json/,'')).to_i}.sort.collect{|n| uri n}.join("\n") + "\n"
 end
 
 delete '/:id/?' do
   LOGGER.debug "Deleting model with id "+@id.to_s
   begin
-    FileUtils.rm @yaml_file
-    if @subjectid and !File.exists? @yaml_file and @uri
+    FileUtils.rm @json_file
+    if @subjectid and !File.exists? @json_file and @uri
       begin
         res = OpenTox::Authorization.delete_policies_from_uri(@uri, @subjectid)
         LOGGER.debug "Policy deleted for Model URI: #{@uri} with result: #{res}"
@@ -100,7 +102,7 @@ end
 
 delete '/?' do
   # TODO delete datasets
-  FileUtils.rm Dir["#{@@datadir}/*.yaml"]
+  FileUtils.rm Dir["#{@@datadir}/*.json"]
   PredictionCache.all.each {|cache| cache.delete }
   response['Content-Type'] = 'text/plain'
   "All models and cached predictions deleted."

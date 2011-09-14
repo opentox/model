@@ -76,8 +76,15 @@ helpers do
 end
 
 get '/?' do # get index of models
-  response['Content-Type'] = 'text/uri-list'
-  Dir["./#{@@datadir}/*json"].collect{|f| File.basename(f.sub(/.json/,'')).to_i}.sort.collect{|n| uri n}.join("\n") + "\n"
+  uri_list = Dir["./#{@@datadir}/*json"].collect{|f| File.basename(f.sub(/.json/,'')).to_i}.sort.collect{|n| uri n}.join("\n") + "\n"
+  case @accept
+  when /html/
+    response['Content-Type'] = 'text/html'
+    OpenTox.text_to_html uri_list
+  else
+    response['Content-Type'] = 'text/uri-list'
+    uri_list
+  end
 end
 
 delete '/:id/?' do

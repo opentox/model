@@ -37,7 +37,8 @@ get '/:id/?' do
     send_file @json_file, :type => 'application/json' 
   when /html/
     response['Content-Type'] = 'text/html'
-    OpenTox.text_to_html File.read(yaml_file(params[:id]))
+    #OpenTox.text_to_html File.read(yaml_file(params[:id]))
+    OpenTox.text_to_html JSON.pretty_generate(JSON.parse(File.read(@json_file)))
   else
     raise OpenTox::BadRequestError.new "Unsupported MIME type '#{@accept}'"
   end

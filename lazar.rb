@@ -152,10 +152,10 @@ post '/:id/?' do
   response['Content-Type'] = 'text/uri-list'
 
   if compound_uri
-    cache = PredictionCache.find(:model_uri => lazar.uri, :compound_uri => compound_uri).first
-    if cache and uri_available?(cache.dataset_uri)
-      return cache.dataset_uri 
-    else
+    #cache = PredictionCache.find(:model_uri => lazar.uri, :compound_uri => compound_uri).first
+    #if cache and uri_available?(cache.dataset_uri)
+    #  return cache.dataset_uri 
+    #else
       begin
         prediction_uri = lazar.predict(compound_uri,true,@subjectid).uri
         PredictionCache.create(:model_uri => lazar.uri, :compound_uri => compound_uri, :dataset_uri => prediction_uri)
@@ -164,7 +164,7 @@ post '/:id/?' do
         LOGGER.error "Lazar prediction failed for #{compound_uri} with #{$!} "
         raise "Prediction of #{compound_uri} with #{lazar.uri} failed."
       end
-    end
+    #end
   elsif dataset_uri
     task = OpenTox::Task.create("Predict dataset",url_for("/#{lazar.id}", :full)) do |task|
       lazar.predict_dataset(dataset_uri, @subjectid, task).uri

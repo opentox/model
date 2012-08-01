@@ -1,6 +1,4 @@
-tmp/*
-*.sqlite3
-log/*
-db/*
-public/*
-data/*
+*.gem
+.bundle
+Gemfile.lock
+pkg/*

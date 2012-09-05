@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.description = %q{Simple OpenTox Model Service}
   s.license     = 'GPL-3'
 
-  s.rubyforge_project = "feature"
+  s.rubyforge_project = "model"
 
   s.files         = `git ls-files`.split("\n")
   #s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")

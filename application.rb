@@ -5,8 +5,6 @@ module OpenTox
 
     post "/model/:id/?" do
 
-      bad_request_error "No compound URI provided" unless params[:compound_uri]
-
       # Read turtle
       rdfstr = FourStore.get(@uri, "text/turtle")
       graph = RDF::Graph.new
@@ -27,7 +25,8 @@ module OpenTox
         h[p.name.to_s] = p.value.to_s
         h
       }
-      m_params[:compound_uri] = params[:compound_uri]
+      m_params[:compound_uri] = params[:compound_uri] if params[:compound_uri]
+      m_params[:dataset_uri] = params[:dataset_uri] if params[:dataset_uri]
 
       # Make prediction
       RestClientWrapper.post File.join($algorithm[:uri],"lazar","predict"), m_params

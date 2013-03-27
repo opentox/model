@@ -18,6 +18,18 @@ module OpenTox
       parameters[:compound_uri] = params[:compound_uri] if params[:compound_uri] 
       parameters[:dataset_uri] = params[:dataset_uri] if params[:dataset_uri] 
       parameters[:model_uri] = @uri
+      sparql = "SELECT ?uri FROM <#{@uri}> WHERE {
+        <#{@uri}> <#{RDF::OT.predictedVariables}> ?uri .
+      }"
+      FourStore.query(sparql, "text/uri-list").split("\n").each do |uri|
+        feat = OpenTox::Feature.new( uri, @subjectid )
+        if feat.title =~ /confidence/
+          parameters[:predicted_confidence_uri] = uri
+        else
+          parameters[:predicted_variable_uri] = uri 
+        end 
+      end
+      
       # pass parameters instead of model_uri, because model service is blocked by incoming call
       # TODO: check if this can be done with redirects (unlikely)
       OpenTox::Algorithm.new(File.join($algorithm[:uri],"lazar","predict"), @subjectid).run parameters

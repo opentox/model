@@ -3,6 +3,10 @@ include RDF
 module OpenTox
   class Application < Service
 
+    head "/#{SERVICE}/:id/?" do
+      resource_not_found_error "#{uri} not found." unless FourStore.head(@uri.split('?').first)
+    end
+
     post "/model/:id/?" do
       if ( (params[:compound_uri] and params[:dataset_uri]) or 
            (!params[:compound_uri] and !params[:dataset_uri])

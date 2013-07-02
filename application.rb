@@ -1,5 +1,3 @@
-include RDF
-
 module OpenTox
   class Application < Service
 
@@ -35,8 +33,7 @@ module OpenTox
       end
       
       # pass parameters instead of model_uri, because model service is blocked by incoming call
-      # TODO: check if this can be done with redirects (unlikely)
-      OpenTox::Algorithm.new(File.join($algorithm[:uri],"lazar","predict"), @subjectid).run parameters
+      RestClientWrapper.post(File.join($algorithm[:uri],"lazar","predict"), parameters, { :content_type => "text/uri-list", :subjectid => @subjectid})
     end
   end
 end

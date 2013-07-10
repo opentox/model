@@ -24,7 +24,7 @@ module OpenTox
         <#{@uri}> <#{RDF::OT.predictedVariables}> ?uri .
       }"
       FourStore.query(sparql, "text/uri-list").split("\n").each do |uri|
-        feat = OpenTox::Feature.new( uri, @subjectid )
+        feat = OpenTox::Feature.new( uri)
         if feat.title =~ /confidence/
           parameters[:predicted_confidence_uri] = uri
         else
@@ -33,7 +33,7 @@ module OpenTox
       end
       
       # pass parameters instead of model_uri, because model service is blocked by incoming call
-      RestClientWrapper.post(File.join($algorithm[:uri],"lazar","predict"), parameters, { :content_type => "text/uri-list", :subjectid => @subjectid})
+      RestClientWrapper.post(File.join($algorithm[:uri],"lazar","predict"), parameters, { :content_type => "text/uri-list"})
     end
   end
 end

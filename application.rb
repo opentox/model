@@ -1,9 +1,13 @@
 module OpenTox
   class Application < Service
 
-    head "/#{SERVICE}/:id/?" do
-      resource_not_found_error "#{uri} not found." unless FourStore.head(@uri.split('?').first)
+    head "/model/?" do
     end
+
+    head '/model/:id/?' do
+      halt 404 unless FourStore.head(@uri.split('?').first)
+    end
+
 
     post "/model/:id/?" do
       if ( (params[:compound_uri] and params[:dataset_uri]) or 

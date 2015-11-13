@@ -1,0 +1,165 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "version": "5.0.0pre1",
+        "title": "OpenTox Model service",
+        "description": "An OpenTox REST Webservice. <br >Ruby implementation of lazar prediction models.",
+        "contact": {
+            "name": "Christoph Helma, in silico toxicology",
+            "url": "http://www.in-silico.ch",
+            "email": "support@in-silico.ch"
+        },
+        "license": {
+            "name": "GNU GENERAL PUBLIC LICENSE",
+            "url": "https://github.com/opentox/model/blob/master/LICENSE"
+        }
+    },
+    "host": "enm.in-silico.ch",
+    "basePath": "/",
+    "schemes": [
+        "https"
+    ],
+    "paths": {
+        "/model": {
+            "get": {
+                "tags": [
+                    "model"
+                ],
+                "description": "Get a list of all lazar models",
+                "parameters": [
+                    {
+                        "name": "accept",
+                        "in": "header",
+                        "description": "requested Content-Type",
+                        "required": true,
+                        "type": "string",
+                        "enum": [
+                            "text/uri-list",
+                            "text/turtle",
+                            "text/plain",
+                            "text/html",
+                            "application/sparql-results+xml",
+                            "application/rdf+xml"
+                        ]
+                    },
+                    {
+                        "$ref": "#/parameters/subjectid"
+                    }
+                ],
+                "produces": [
+                    "text/uri-list",
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/responses/200"
+                    },
+                    "400": {
+                        "$ref": "#/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/responses/401"
+                    },
+                    "404": {
+                        "$ref": "#/responses/404"
+                    },
+                    "500": {
+                        "$ref": "#/responses/500"
+                    }
+                }
+            }
+        },
+        "/model/{id}": {
+            "get": {
+                "tags": [
+                    "model"
+                ],
+                "description": "Get model representation",
+                "parameters": [
+                    {
+                        "name": "Content-Type",
+                        "in": "header",
+                        "description": "body Content-Type",
+                        "required": true,
+                        "type": "string",
+                        "enum": [
+                            "text/turtle",
+                            "text/plain",
+                            "text/html",
+                            "application/sparql-results+xml",
+                            "application/rdf+xml"
+                        ]
+                    },
+                    {
+                        "$ref": "#/parameters/modelid"
+                    },
+                    {
+                        "$ref": "#/parameters/subjectid"
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/responses/200"
+                    },
+                    "400": {
+                        "$ref": "#/responses/400"
+                    },
+                    "401": {
+                        "$ref": "#/responses/401"
+                    },
+                    "403": {
+                        "$ref": "#/responses/403"
+                    },
+                    "404": {
+                        "$ref": "#/responses/404"
+                    }
+                }
+            }
+        }
+    },
+    "parameters": {
+        "modelid": {
+            "name": "id",
+            "in": "path",
+            "description": "model id",
+            "required": true,
+            "type": "string"
+        },
+        "subjectid": {
+            "name": "subjectid",
+            "in": "header",
+            "description": "authorization token, required if A&A active",
+            "required": true,
+            "type": "string"
+        }
+    },
+    "responses": {
+        "200": {
+            "description": "OK"
+        },
+        "400": {
+            "description": "Bad Request"
+        },
+        "401": {
+            "description": "Unauthorized"
+        },
+        "403": {
+            "description": "Forbidden"
+        },
+        "404": {
+            "description": "Resource Not Found"
+        },
+        "500": {
+            "description": "Server Error"
+        }
+    },
+    "tags": [
+        {
+            "name": "model",
+            "description": "Lazar Model Service"
+        }
+    ]
+}
